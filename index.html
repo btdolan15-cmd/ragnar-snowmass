@@ -142,7 +142,24 @@
 <div class="card">
   <div id="map"></div>
 </div>
+function updateOrder() {
+  let current = state.index >= 0 ? runners[state.index] : null;
+  let next = runners[(state.index + 1) % runners.length];
 
+  let orderHTML = "";
+
+  runners.forEach((r, i) => {
+    let style = "padding:6px; margin:3px 0; background:#333; border-radius:6px;";
+
+    if (r === current) style = "padding:6px; margin:3px 0; background:#1e7f3a; border-radius:6px; font-weight:bold;";
+    else if (r === next) style = "padding:6px; margin:3px 0; background:#b07a00; border-radius:6px; font-weight:bold;";
+
+    orderHTML += `<div style="${style}">${i+1}. ${r}</div>`;
+  });
+
+  document.getElementById("orderList").innerHTML = orderHTML;
+  document.getElementById("nextRunner").innerText = next;
+}
 <script>
 
 let runners = ["Bryce","Skylar","Alex","Maggie","Nick","Billy","Kyle","Taylor"];
@@ -245,6 +262,15 @@ function resetRace() {
   alert("Race reset complete");
 }
 </script>
+<!-- RUNNING ORDER BAR -->
+<div class="card" id="orderCard" style="position:sticky; bottom:0; margin-top:15px;">
+  <div class="label">Live Running Order</div>
+  <div id="orderList"></div>
 
+  <div style="margin-top:8px;">
+    <div class="label">Up Next</div>
+    <div id="nextRunner">--</div>
+  </div>
+</div>
 </body>
 </html>
