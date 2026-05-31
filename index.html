@@ -159,11 +159,17 @@ let trailNames = {
   "5.2": "🟡 Yellow - North Mesa",
   "6.7": "🔴 Red - Rim Trail"
 };
-
+<select id="runnerSelect"></select>
 function init() {
   let sel = document.getElementById("runnerSelect");
-  runners.forEach(r => {
+
+  if (!sel) return;
+
+  sel.innerHTML = ""; // clear anything broken
+
+  runners.forEach((r, i) => {
     let o = document.createElement("option");
+    o.value = i;
     o.textContent = r;
     sel.appendChild(o);
   });
@@ -304,6 +310,8 @@ results = [];
 
   alert("Race reset complete");
 }
+  init();
+update();
 </script>
 <!-- RUNNING ORDER -->
 <div class="card">
