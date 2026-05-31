@@ -122,6 +122,19 @@
     <button class="start" onclick="startRun()">START</button>
     <button class="finish" onclick="finishRun()">FINISH</button>
     <button class="gps" onclick="shareLocation()">GPS</button>
+    <div style="margin-top:12px;">
+  <button onclick="resetRace()" style="
+    width:100%;
+    padding:14px;
+    border-radius:10px;
+    border:none;
+    background:#444;
+    color:white;
+    font-weight:bold;
+  ">
+    RESET RACE
+  </button>
+</div>
   </div>
 </div>
 
@@ -208,7 +221,29 @@ setInterval(update, 10000);
 
 init();
 update();
+function resetRace() {
+  let confirmReset = confirm("Reset race data? This will clear current runner, times, and progress.");
 
+  if (!confirmReset) return;
+
+  // Clear saved state
+  localStorage.removeItem("state");
+
+  // Reset in-memory state
+  state = {
+    index: -1,
+    startTime: null
+  };
+
+  // Reset UI
+  document.getElementById("runner").innerText = "No Runner";
+  document.getElementById("trail").innerText = "--";
+  document.getElementById("done").innerText = "0.00 mi";
+  document.getElementById("remaining").innerText = "0.00 mi";
+  document.getElementById("eta").innerText = "--";
+
+  alert("Race reset complete");
+}
 </script>
 
 </body>
