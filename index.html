@@ -1,17 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ragnar Command Center</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0b0b0b;
+      color: white;
+      padding: 15px;
+    }
+
+    .card {
+      background: #1e1e1e;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin: 10px 0;
+      text-align: center;
+    }
+
+    .big {
+      font-size: 26px;
+      font-weight: bold;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      margin: 6px 0;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 8px;
+    }
+
+    button {
+      width: 32%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      font-weight: bold;
+    }
+
+    .start { background: green; color: white; }
+    .finish { background: red; color: white; }
+    .gps { background: blue; color: white; }
+
+    .btnRow {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+
+    #map {
+      width: 100%;
+      height: 220px;
+      border-radius: 10px;
+      background: #111;
+    }
+
+    .label {
+      opacity: 0.7;
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>🏃 Ragnar Command Center</h1>
+
+<!-- CURRENT RUNNER -->
+<div class="card">
+  <div class="big" id="runner">No Runner</div>
+  <div id="trail">--</div>
+</div>
+
+<!-- STATS -->
+<div class="card">
+  <div class="row">
+    <div>
+      <div class="label">Distance Done</div>
+      <div id="done">0.00 mi</div>
+    </div>
+    <div>
+      <div class="label">Remaining</div>
+      <div id="remaining">0.00 mi</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div>
+      <div class="label">ETA</div>
+      <div id="eta">--</div>
+    </div>
+  </div>
+</div>
+
 <!-- CONTROLS -->
 <div class="card">
-
-  <div class="label">Runner</div>
   <select id="runnerSelect"></select>
 
-  <div class="label">Trail</div>
   <select id="trailSelect">
     <option value="3.7">🟢 Green - 3.7 mi</option>
     <option value="5.2">🟡 Yellow - 5.2 mi</option>
     <option value="6.7">🔴 Red - 6.7 mi</option>
   </select>
 
-  <div class="label">Pace (min/mile)</div>
   <input id="pace" type="number" value="10" step="0.5">
 
   <div class="btnRow">
@@ -19,19 +123,93 @@
     <button class="finish" onclick="finishRun()">FINISH</button>
     <button class="gps" onclick="shareLocation()">GPS</button>
   </div>
-
-  <div style="margin-top:10px;">
-    <button onclick="resetApp()" style="
-      width:100%;
-      padding:12px;
-      border-radius:10px;
-      border:none;
-      background:#555;
-      color:white;
-      font-weight:bold;
-    ">
-      RESET RACE DATA
-    </button>
-  </div>
-
 </div>
+
+<!-- MAP -->
+<div class="card">
+  <div id="map"></div>
+</div>
+
+<script>
+
+let runners = ["Bryce","Skylar","Alex","Maggie","Nick","Billy","Kyle","Taylor"];
+
+let state = JSON.parse(localStorage.getItem("state")) || {
+  index: -1,
+  startTime: null
+};
+
+let trailNames = {
+  "3.7": "🟢 Green - Highline/Lowline",
+  "5.2": "🟡 Yellow - North Mesa",
+  "6.7": "🔴 Red - Rim Trail"
+};
+
+function init() {
+  let sel = document.getElementById("runnerSelect");
+  runners.forEach(r => {
+    let o = document.createElement("option");
+    o.textContent = r;
+    sel.appendChild(o);
+  });
+}
+
+function startRun() {
+  state.index = (state.index + 1) % runners.length;
+  state.startTime = Date.now();
+  save();
+  update();
+}
+
+function finishRun() {
+  let mins = (Date.now() - state.startTime)/60000;
+  alert(runners[state.index] + " finished in " + mins.toFixed(1) + " min");
+}
+
+function update() {
+  if (state.index < 0) return;
+
+  let runner = runners[state.index];
+  let distance = parseFloat(document.getElementById("trailSelect").value);
+  let pace = parseFloat(document.getElementById("pace").value);
+
+  let elapsed = (Date.now() - state.startTime)/60000;
+
+  let done = Math.min(elapsed / pace, distance);
+  let remaining = Math.max(distance - done, 0);
+
+  let eta = new Date(state.startTime + (distance * pace) * 60000);
+
+  document.getElementById("runner").innerText = runner;
+  document.getElementById("trail").innerText =
+    trailNames[document.getElementById("trailSelect").value];
+
+  document.getElementById("done").innerText = done.toFixed(2) + " mi";
+  document.getElementById("remaining").innerText = remaining.toFixed(2) + " mi";
+  document.getElementById("eta").innerText = eta.toLocaleTimeString();
+}
+
+function shareLocation() {
+  navigator.geolocation.getCurrentPosition(pos => {
+    let lat = pos.coords.latitude;
+    let lon = pos.coords.longitude;
+
+    document.getElementById("map").innerHTML =
+      `<iframe width="100%" height="220"
+      src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"></iframe>`;
+  });
+}
+
+function save() {
+  localStorage.setItem("state", JSON.stringify(state));
+}
+
+setInterval(update, 10000);
+
+init();
+update();
+
+</script>
+
+</body>
+</html>
