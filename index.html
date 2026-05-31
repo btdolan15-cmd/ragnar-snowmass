@@ -1,10 +1,240 @@
-<select id="trailSelect">
-  <option value="3.7">Green Trail (3.7 mi)</option>
-  <option value="5.2">Yellow Trail (5.2 mi)</option>
-  <option value="6.7">Red Trail (6.7 mi)</option>
-</select>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ragnar Tracker V3</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0f0f0f;
+      color: white;
+      display: flex;
+      height: 100vh;
+    }
 
-<br><br>
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
+      background: #1c1c1c;
+      padding: 15px;
+      box-sizing: border-box;
+    }
 
-<input id="pace" type="number" value="10" step="0.5" min="6" max="20">
-<p>Min/mile pace</p>
+    .tab {
+      padding: 12px;
+      margin: 8px 0;
+      background: #333;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .tab:hover {
+      background: #444;
+    }
+
+    /* Main content */
+    .main {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .card {
+      background: #222;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+
+    button {
+      padding: 12px;
+      margin: 5px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .start { background: green; color: white; }
+    .finish { background: red; color: white; }
+    .gps { background: blue; color: white; }
+
+    #map {
+      width: 100%;
+      height: 300px;
+      border-radius: 10px;
+      background: #111;
+    }
+
+    input, select {
+      padding: 8px;
+      margin: 5px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <h3>🏃 Ragnar</h3>
+
+  <div class="tab" onclick="showView('track')">📍 Track</div>
+  <div class="tab" onclick="showView('runner')">🏃 Current Runner</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- TRACK VIEW -->
+<div id="trackView">
+  <div class="card">
+    <h2>Track View</h2>
+    <p>Current Trail: <span id="trailLabel">--</span></p>
+    <div id="map"></div>
+    <button class="gps" onclick="shareLocation()">Share Current GPS</button>
+  </div>
+</div>
+
+<!-- RUNNER VIEW -->
+<div id="runnerView" style="display:none">
+
+  <div class="card">
+    <h2 id="runner">No runner</h2>
+    <p>Trail: <span id="trailName">--</span></p>
+    <p>Distance: <span id="distance">--</span> mi</p>
+    <p>Remaining: <span id="remaining">--</span> mi</p>
+    <p>ETA: <span id="eta">--</span></p>
+  </div>
+
+  <div class="card">
+    <select id="runnerSelect"></select>
+
+    <select id="trailSelect">
+      <option value="3.7">Green (3.7 mi)</option>
+      <option value="5.2">Yellow (5.2 mi)</option>
+      <option value="6.7">Red (6.7 mi)</option>
+    </select>
+
+    <input id="pace" type="number" value="10" step="0.5">
+
+    <br>
+
+    <button class="start" onclick="startRun()">START</button>
+    <button class="finish" onclick="finishRun()">FINISH</button>
+  </div>
+
+</div>
+
+</div>
+
+<script>
+
+let runners = ["Bryce","Skylar","Alex","Maggie","Nick","Billy","Kyle","Taylor"];
+let state = JSON.parse(localStorage.getItem("state")) || {
+  index: -1,
+  startTime: null,
+  progress: 0
+};
+
+let trailMap = {
+  "3.7": "🟢 Green - Highline/Lowline",
+  "5.2": "🟡 Yellow - North Mesa",
+  "6.7": "🔴 Red - Rim Trail"
+};
+
+function init() {
+  let sel = document.getElementById("runnerSelect");
+  runners.forEach(r => {
+    let opt = document.createElement("option");
+    opt.textContent = r;
+    sel.appendChild(opt);
+  });
+}
+
+function showView(v) {
+  document.getElementById("trackView").style.display = v === 'track' ? 'block' : 'none';
+  document.getElementById("runnerView").style.display = v === 'runner' ? 'block' : 'none';
+}
+
+/* ---------------- RUN LOGIC ---------------- */
+
+function startRun() {
+  state.index = (state.index + 1) % runners.length;
+  state.startTime = Date.now();
+  state.progress = 0;
+
+  save();
+  update();
+}
+
+function finishRun() {
+  let end = Date.now();
+  let mins = (end - state.startTime)/60000;
+  alert(runners[state.index] + " finished in " + mins.toFixed(1) + " min");
+}
+
+/* ---------------- ETA + DISTANCE ---------------- */
+
+function update() {
+  if (state.index < 0) return;
+
+  let trail = document.getElementById("trailSelect").value;
+  let distance = parseFloat(trail);
+  let pace = parseFloat(document.getElementById("pace").value);
+
+  let runner = runners[state.index];
+
+  let elapsedMin = (Date.now() - state.startTime)/60000;
+  let speed = 60 / pace; // miles per hour
+  let milesDone = Math.min(elapsedMin / pace, distance);
+  let remaining = Math.max(distance - milesDone, 0);
+
+  let etaMin = remaining * pace + elapsedMin;
+  let eta = new Date(state.startTime + etaMin * 60000);
+
+  document.getElementById("runner").innerText = runner;
+  document.getElementById("trailName").innerText = trailMap[trail];
+  document.getElementById("distance").innerText = milesDone.toFixed(2);
+  document.getElementById("remaining").innerText = remaining.toFixed(2);
+  document.getElementById("eta").innerText = eta.toLocaleTimeString();
+
+  document.getElementById("trailLabel").innerText = trailMap[trail];
+}
+
+/* ---------------- GPS ---------------- */
+
+function shareLocation() {
+  if (!navigator.geolocation) return alert("No GPS");
+
+  navigator.geolocation.getCurrentPosition(pos => {
+    let lat = pos.coords.latitude;
+    let lon = pos.coords.longitude;
+
+    document.getElementById("map").innerHTML =
+      `<iframe width="100%" height="300"
+      src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"></iframe>`;
+  });
+}
+
+/* ---------------- STORAGE ---------------- */
+
+function save() {
+  localStorage.setItem("state", JSON.stringify(state));
+}
+
+/* ---------------- LIVE UPDATE LOOP ---------------- */
+
+setInterval(() => {
+  update();
+}, 15000);
+
+init();
+update();
+
+</script>
+
+</body>
+</html>
