@@ -151,9 +151,7 @@ let state = JSON.parse(localStorage.getItem("state")) || {
   index: -1,
   startTime: null
 };
-  
-let results = JSON.parse(localStorage.getItem("results")) || [];
-  
+
 let trailNames = {
   "3.7": "🟢 Green - Highline/Lowline",
   "5.2": "🟡 Yellow - North Mesa",
@@ -172,31 +170,13 @@ function init() {
 function startRun() {
   state.index = (state.index + 1) % runners.length;
   state.startTime = Date.now();
-
   save();
   update();
 }
 
 function finishRun() {
-  let end = Date.now();
-  let duration = (end - state.startTime) / 60000;
-
-  let trail = trailNames[document.getElementById("trailSelect").value];
-  let runner = runners[state.index];
-
-  results.push({
-    runner,
-    trail,
-    start: new Date(state.startTime).toLocaleTimeString(),
-    finish: new Date(end).toLocaleTimeString(),
-    duration: duration.toFixed(1)
-  });
-
-  localStorage.setItem("results", JSON.stringify(results));
-
-  alert(runner + " finished in " + duration.toFixed(1) + " min");
-
-  update();
+  let mins = (Date.now() - state.startTime)/60000;
+  alert(runners[state.index] + " finished in " + mins.toFixed(1) + " min");
 }
 
 function update() {
@@ -220,7 +200,6 @@ function update() {
   document.getElementById("done").innerText = done.toFixed(2) + " mi";
   document.getElementById("remaining").innerText = remaining.toFixed(2) + " mi";
   document.getElementById("eta").innerText = eta.toLocaleTimeString();
-updateBottomPanels();
 }
 
 function shareLocation() {
@@ -254,46 +233,7 @@ function resetRace() {
   state = {
     index: -1,
     startTime: null
-    localStorage.removeItem("results");
-results = [];
   };
-
-  function updateBottomPanels() {
-
-  // RUNNING ORDER
-  let order = document.getElementById("order");
-  let nextIndex = (state.index + 1) % runners.length;
-
-  let html = "";
-
-  runners.forEach((r, i) => {
-    if (i === state.index) {
-      html += "🟢 " + r + " (RUNNING)<br>";
-    } else if (i === nextIndex) {
-      html += "🟡 " + r + " (NEXT)<br>";
-    } else {
-      html += "⚪ " + r + "<br>";
-    }
-  });
-
-  order.innerHTML = html;
-
-  // RESULTS TABLE
-  let table = document.getElementById("results");
-  table.innerHTML = "";
-
-  results.slice().reverse().forEach(r => {
-    let row = `
-      <tr>
-        <td>${r.runner}</td>
-        <td>${r.trail}</td>
-        <td>${r.start} → ${r.finish}</td>
-        <td>${r.duration} min</td>
-      </tr>
-    `;
-    table.innerHTML += row;
-  });
-}
 
   // Reset UI
   document.getElementById("runner").innerText = "No Runner";
@@ -305,26 +245,6 @@ results = [];
   alert("Race reset complete");
 }
 </script>
-<!-- RUNNING ORDER -->
-<div class="card">
-  <div class="label">Running Order (Live)</div>
-  <div id="order"></div>
-</div>
 
-<!-- RESULTS TABLE -->
-<div class="card">
-  <div class="label">Completed Runs</div>
-  <table style="width:100%; font-size:12px; margin-top:8px;" border="0">
-    <thead>
-      <tr style="text-align:left; opacity:0.7;">
-        <th>Runner</th>
-        <th>Trail</th>
-        <th>Time</th>
-        <th>Duration</th>
-      </tr>
-    </thead>
-    <tbody id="results"></tbody>
-  </table>
-</div>
 </body>
 </html>
