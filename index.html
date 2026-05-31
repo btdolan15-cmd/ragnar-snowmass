@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ragnar Tracker V2.1</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial; background:#111; color:white; text-align:center; padding:20px; }
+    input, select, button { padding:10px; margin:5px; font-size:16px; border-radius:8px; }
+    button { border:none; cursor:pointer; }
+    .start { background:green; color:white; }
+    .finish { background:red; color:white; }
+    .card { background:#222; padding:15px; border-radius:10px; margin:10px 0; }
+    .hidden { display:none; }
+  </style>
+</head>
+
+<body>
+
+<h1>🏃 Ragnar Tracker V2.1</h1>
+
+<!-- SETUP SCREEN -->
+<div id="setup" class="card">
+  <h2>Enter Your Team</h2>
+
+  <div id="inputs"></div>
+
+  <button onclick="saveTeam()">Save Team</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" class="hidden">
+
+  <div class="card">
+    <h2 id="runner">No runner</h2>
+    <p>Start: <span id="start">--</span></p>
+    <p>ETA: <span id="eta">--</span></p>
+  </div>
+
+  <div class="card">
+    <h3>Next Up</h3>
+    <p id="next">--</p>
+  </div>
+
+  <select id="loopSelect">
+    <option value="55">Green (~55 min)</option>
+    <option value="75">Red (~75 min)</option>
+    <option value="90">Blue (~90 min)</option>
+  </select>
+
+  <br><br>
+
+  <button class="start" onclick="startRun()">START RUN</button>
+  <button class="finish" onclick="finishRun()">FINISH RUN</button>
+
+</div>
+
+<script>
+let runners = JSON.parse(localStorage.getItem("runners")) || [];
+let state = JSON.parse(localStorage.getItem("state")) || { index:-1, startTime:null };
+
+function initInputs(){
+  let container = document.getElementById("inputs");
+  for(let i=0;i<8;i++){
+    container.innerHTML += `<input id="r${i}" placeholder="Runner ${i+1}"><br>`;
+  }
+}
+
+function saveTeam(){
+  runners = [];
+  for(let i=0;i<8;i++){
+    let val = document.getElementById("r"+i).value;
+    if(val) runners.push(val);
+  }
+
+  localStorage.setItem("runners", JSON.stringify(runners));
+
+  if(runners.length > 0){
+    document.getElementById("setup").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+  }
+
+  updateUI();
+}
+
+function startRun(){
+  state.index = (state.index + 1) % runners.length;
+  state.startTime = Date.now();
+
+  localStorage.setItem("state", JSON.stringify(state));
+
+  alert(runners[state.index] + " is running!");
+
+  updateUI();
+}
+
+function finishRun(){
+  let end = Date.now();
+  let mins = (end - state.startTime)/60000;
+
+  alert(runners[state.index] + " finished in " + mins.toFixed(1) + " min");
+}
+
+function updateUI(){
+  if(runners.length === 0) return;
+
+  if(state.index >= 0){
+    document.getElementById("runner").innerText = runners[state.index];
+
+    let loop = document.getElementById("loopSelect").value;
+    let eta = new Date(state.startTime + loop*60000);
+
+    document.getElementById("start").innerText = new Date(state.startTime).toLocaleTimeString();
+    document.getElementById("eta").innerText = eta.toLocaleTimeString();
+
+    document.getElementById("next").innerText =
+      runners[(state.index+1)%runners.length];
+  }
+}
+
+initInputs();
+
+if(runners.length > 0){
+  document.getElementById("setup").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  updateUI();
+}
+</script>
+
+</body>
+</html>
