@@ -1,131 +1,0 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Ragnar Tracker V2</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      background: #111;
-      color: white;
-      padding: 20px;
-    }
-    button {
-      padding: 15px;
-      margin: 10px;
-      font-size: 16px;
-      border-radius: 10px;
-      border: none;
-    }
-    .start { background: green; color: white; }
-    .finish { background: red; color: white; }
-    .gps { background: blue; color: white; }
-    select { padding: 10px; font-size: 16px; }
-    .card {
-      background: #222;
-      padding: 15px;
-      border-radius: 10px;
-      margin: 10px 0;
-    }
-  </style>
-</head>
- 
-<body>
- 
-<h1>🏃 Ragnar Tracker V2</h1>
- 
-<div class="card">
-  <h2 id="runner">No runner</h2>
-  <p>Loop: <span id="loop">--</span></p>
-  <p>Start: <span id="start">--</span></p>
-  <p>ETA: <span id="eta">--</span></p>
-</div>
- 
-<div class="card">
-  <h3>Next Up</h3>
-  <p id="next">--</p>
-</div>
- 
-<select id="loopSelect">
-  <option value="55">Green Loop (~55 min)</option>
-  <option value="75">Red Loop (~75 min)</option>
-  <option value="90">Blue Loop (~90 min)</option>
-</select>
- 
-<br><br>
- 
-<button class="start" onclick="startRun()">START RUN</button>
-<button class="finish" onclick="finishRun()">FINISH RUN</button>
-<button class="gps" onclick="shareLocation()">SHARE LOCATION</button>
- 
-<script>
-let runners = ["Bryce","Skylar","Alex","Maggie","Nick","Billy","Kyle","Taylor"];
-let state = JSON.parse(localStorage.getItem("ragnarState")) || {
-  index: -1,
-  startTime: null,
-  history: []
-};
- 
-function save() {
-  localStorage.setItem("ragnarState", JSON.stringify(state));
-}
- 
-function updateUI() {
-  if (state.index >= 0) {
-    document.getElementById("runner").innerText = runners[state.index];
-    document.getElementById("start").innerText = new Date(state.startTime).toLocaleTimeString();
- 
-    let loopTime = document.getElementById("loopSelect").value;
-    document.getElementById("loop").innerText = loopTime + " min";
- 
-    let eta = new Date(state.startTime + loopTime * 60000);
-    document.getElementById("eta").innerText = eta.toLocaleTimeString();
- 
-    let next = runners[(state.index + 1) % runners.length];
-    document.getElementById("next").innerText = next;
-  }
-}
- 
-function startRun() {
-  state.index = (state.index + 1) % runners.length;
-  state.startTime = Date.now();
- 
-  let next = runners[(state.index + 1) % runners.length];
- 
-  alert(runners[state.index] + " is running!\n" + next + " you're on deck!");
- 
-  save();
-  updateUI();
-}
- 
-function finishRun() {
-  let finishTime = Date.now();
-  let duration = (finishTime - state.startTime) / 60000;
- 
-  state.history.push({
-    runner: runners[state.index],
-    time: duration.toFixed(1)
-  });
- 
-  alert(runners[state.index] + " finished in " + duration.toFixed(1) + " min");
- 
-  save();
-}
- 
-function shareLocation() {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(pos => {
-      let coords = pos.coords.latitude + "," + pos.coords.longitude;
-      alert("Share this:\nhttps://maps.google.com/?q=" + coords);
-    });
-  } else {
-    alert("GPS not supported");
-  }
-}
- 
-updateUI();
-</script>
- 
-</body>
-</html>
