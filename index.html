@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Ragnar Command Center</title>
+  <title>Ragnar Command Center V4.1</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
@@ -9,44 +9,63 @@
       font-family: Arial;
       background: #0b0b0b;
       color: white;
-      padding: 15px;
+      padding: 12px;
     }
 
     .card {
-      background: #1e1e1e;
+      background: #1c1c1c;
       border-radius: 12px;
-      padding: 15px;
-      margin-bottom: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
     }
 
     h1 {
-      font-size: 22px;
-      margin: 10px 0;
       text-align: center;
+      font-size: 20px;
+      margin: 8px 0;
     }
 
     .big {
-      font-size: 26px;
+      font-size: 24px;
       font-weight: bold;
     }
 
-    .row {
-      display: flex;
-      justify-content: space-between;
-      margin: 6px 0;
+    .runnerList {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .runner {
+      padding: 8px;
+      border-radius: 8px;
+      background: #333;
+      font-size: 14px;
+    }
+
+    .active { background: #1e7f3a; }
+    .deck { background: #b07a00; }
+
+    .alertBox {
+      background: #2a2a2a;
+      padding: 8px;
+      border-radius: 8px;
+      max-height: 120px;
+      overflow-y: auto;
+      font-size: 13px;
     }
 
     select, input {
       width: 100%;
       padding: 10px;
-      margin-top: 8px;
+      margin-top: 6px;
       border-radius: 8px;
     }
 
     button {
       width: 32%;
-      padding: 14px;
-      border-radius: 10px;
+      padding: 12px;
+      border-radius: 8px;
       border: none;
       font-weight: bold;
     }
@@ -63,14 +82,14 @@
 
     #map {
       width: 100%;
-      height: 220px;
+      height: 200px;
       border-radius: 10px;
       background: #111;
     }
 
     .label {
+      font-size: 11px;
       opacity: 0.7;
-      font-size: 12px;
     }
   </style>
 </head>
@@ -85,31 +104,32 @@
   <div id="trail">--</div>
 </div>
 
+<!-- RUNNER ROSTER -->
+<div class="card">
+  <div class="label">Team Roster</div>
+  <div class="runnerList" id="roster"></div>
+</div>
+
 <!-- STATS -->
 <div class="card">
-  <div class="row">
-    <div>
-      <div class="label">Distance Done</div>
-      <div id="done">0.00 mi</div>
-    </div>
-    <div>
-      <div class="label">Remaining</div>
-      <div id="remaining">0.00 mi</div>
-    </div>
-  </div>
+  <div class="label">Distance Done</div>
+  <div id="done">0.00 mi</div>
 
-  <div class="row">
-    <div>
-      <div class="label">ETA</div>
-      <div id="eta">--</div>
-    </div>
-  </div>
+  <div class="label">Remaining</div>
+  <div id="remaining">0.00 mi</div>
+
+  <div class="label">ETA</div>
+  <div id="eta">--</div>
+</div>
+
+<!-- ALERTS -->
+<div class="card">
+  <div class="label">Alerts</div>
+  <div class="alertBox" id="alerts"></div>
 </div>
 
 <!-- CONTROLS -->
 <div class="card">
-  <select id="runnerSelect"></select>
-
   <select id="trailSelect">
     <option value="3.7">🟢 Green - 3.7 mi</option>
     <option value="5.2">🟡 Yellow - 5.2 mi</option>
@@ -142,43 +162,71 @@ let state = JSON.parse(localStorage.getItem("state")) || {
 let trailNames = {
   "3.7": "🟢 Green - Highline/Lowline",
   "5.2": "🟡 Yellow - North Mesa",
-  "6.7": "🔴 Red - Rim Trail"
+  "6.7": "🔴 Rim Trail"
 };
 
-function init() {
-  let sel = document.getElementById("runnerSelect");
+function initRoster() {
+  let el = document.getElementById("roster");
+  el.innerHTML = "";
+
+  let current = runners[state.index];
+  let next = runners[(state.index + 1) % runners.length];
+
   runners.forEach(r => {
-    let o = document.createElement("option");
-    o.textContent = r;
-    sel.appendChild(o);
+    let div = document.createElement("div");
+    div.className = "runner";
+
+    if (r === current) div.classList.add("active");
+    else if (r === next) div.classList.add("deck");
+
+    div.textContent = r;
+    el.appendChild(div);
   });
+}
+
+/* ALERT SYSTEM */
+function sendAlert(msg) {
+  let box = document.getElementById("alerts");
+  let div = document.createElement("div");
+  div.textContent = new Date().toLocaleTimeString() + " — " + msg;
+  box.prepend(div);
+
+  // popup for urgency
+  alert(msg);
 }
 
 function startRun() {
   state.index = (state.index + 1) % runners.length;
   state.startTime = Date.now();
+
+  let current = runners[state.index];
+  let next = runners[(state.index + 1) % runners.length];
+
+  sendAlert(current + " is now RUNNING");
+  sendAlert(next + " you are ON DECK (prepare now)");
+
   save();
   update();
 }
 
 function finishRun() {
   let mins = (Date.now() - state.startTime)/60000;
-  alert(runners[state.index] + " finished in " + mins.toFixed(1) + " min");
+  sendAlert(runners[state.index] + " finished in " + mins.toFixed(1) + " min");
 }
 
 function update() {
   if (state.index < 0) return;
 
-  let runner = runners[state.index];
   let distance = parseFloat(document.getElementById("trailSelect").value);
   let pace = parseFloat(document.getElementById("pace").value);
 
-  let elapsed = (Date.now() - state.startTime)/60000;
+  let runner = runners[state.index];
 
+  let elapsed = (Date.now() - state.startTime)/60000;
   let done = Math.min(elapsed / pace, distance);
   let remaining = Math.max(distance - done, 0);
 
-  let eta = new Date(state.startTime + (distance * pace) * 60000);
+  let eta = new Date(state.startTime + distance * pace * 60000);
 
   document.getElementById("runner").innerText = runner;
   document.getElementById("trail").innerText =
@@ -187,6 +235,8 @@ function update() {
   document.getElementById("done").innerText = done.toFixed(2) + " mi";
   document.getElementById("remaining").innerText = remaining.toFixed(2) + " mi";
   document.getElementById("eta").innerText = eta.toLocaleTimeString();
+
+  initRoster();
 }
 
 function shareLocation() {
@@ -195,7 +245,7 @@ function shareLocation() {
     let lon = pos.coords.longitude;
 
     document.getElementById("map").innerHTML =
-      `<iframe width="100%" height="220"
+      `<iframe width="100%" height="200"
       src="https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed"></iframe>`;
   });
 }
@@ -206,7 +256,7 @@ function save() {
 
 setInterval(update, 10000);
 
-init();
+initRoster();
 update();
 
 </script>
