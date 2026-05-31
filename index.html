@@ -122,19 +122,6 @@
     <button class="start" onclick="startRun()">START</button>
     <button class="finish" onclick="finishRun()">FINISH</button>
     <button class="gps" onclick="shareLocation()">GPS</button>
-    <div style="margin-top:12px;">
-  <button onclick="resetRace()" style="
-    width:100%;
-    padding:14px;
-    border-radius:10px;
-    border:none;
-    background:#444;
-    color:white;
-    font-weight:bold;
-  ">
-    RESET RACE
-  </button>
-</div>
   </div>
 </div>
 
@@ -142,24 +129,7 @@
 <div class="card">
   <div id="map"></div>
 </div>
-function updateOrder() {
-  let current = state.index >= 0 ? runners[state.index] : null;
-  let next = runners[(state.index + 1) % runners.length];
 
-  let orderHTML = "";
-
-  runners.forEach((r, i) => {
-    let style = "padding:6px; margin:3px 0; background:#333; border-radius:6px;";
-
-    if (r === current) style = "padding:6px; margin:3px 0; background:#1e7f3a; border-radius:6px; font-weight:bold;";
-    else if (r === next) style = "padding:6px; margin:3px 0; background:#b07a00; border-radius:6px; font-weight:bold;";
-
-    orderHTML += `<div style="${style}">${i+1}. ${r}</div>`;
-  });
-
-  document.getElementById("orderList").innerHTML = orderHTML;
-  document.getElementById("nextRunner").innerText = next;
-}
 <script>
 
 let runners = ["Bryce","Skylar","Alex","Maggie","Nick","Billy","Kyle","Taylor"];
@@ -238,39 +208,8 @@ setInterval(update, 10000);
 
 init();
 update();
-function resetRace() {
-  let confirmReset = confirm("Reset race data? This will clear current runner, times, and progress.");
 
-  if (!confirmReset) return;
-
-  // Clear saved state
-  localStorage.removeItem("state");
-
-  // Reset in-memory state
-  state = {
-    index: -1,
-    startTime: null
-  };
-
-  // Reset UI
-  document.getElementById("runner").innerText = "No Runner";
-  document.getElementById("trail").innerText = "--";
-  document.getElementById("done").innerText = "0.00 mi";
-  document.getElementById("remaining").innerText = "0.00 mi";
-  document.getElementById("eta").innerText = "--";
-
-  alert("Race reset complete");
-}
 </script>
-<!-- RUNNING ORDER BAR -->
-<div class="card" id="orderCard" style="position:sticky; bottom:0; margin-top:15px;">
-  <div class="label">Live Running Order</div>
-  <div id="orderList"></div>
 
-  <div style="margin-top:8px;">
-    <div class="label">Up Next</div>
-    <div id="nextRunner">--</div>
-  </div>
-</div>
 </body>
 </html>
